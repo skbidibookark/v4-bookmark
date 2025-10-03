@@ -4,7 +4,15 @@ if(document.getElementById('__dbg')) return;
 // ----- Helpers -----
 function create(tag, props={}, styles={}){ const el=document.createElement(tag); Object.assign(el,props); Object.assign(el.style,styles); return el; }
 function append(parent,...kids){ kids.forEach(k=>parent.appendChild(k)); return parent; }
-function btn(text,color='#0ea5ff'){ const b=create('button',{innerText:text},{padding:'6px 10px',borderRadius:'6px',background:color,border:'none',cursor:'pointer',color:'#fff',fontWeight:700,fontSize:'13px',boxShadow:`0 4px 12px ${color}33`,transition:'transform .12s'}); b.onmouseenter=()=>b.style.transform='translateY(-2px)'; b.onmouseleave=()=>b.style.transform=''; return b; }
+
+// Animated button helper
+function animatedBtn(text,color='#0ea5ff'){
+  const b=create('button',{innerText:text},{padding:'6px 10px',borderRadius:'6px',background:color,border:'none',cursor:'pointer',color:'#fff',fontWeight:700,fontSize:'13px',boxShadow:`0 4px 12px ${color}33`,transition:'all 0.2s ease'});
+  b.onmouseenter=()=>b.style.transform='translateY(-3px) scale(1.05)';
+  b.onmouseleave=()=>b.style.transform='';
+  return b;
+}
+
 function inputStyle(width='86%'){ return { width:width, padding:'6px 6px', borderRadius:'6px', border:'1px solid #222', background:'#0b0d12', color:'#fff', outline:'none', fontSize:'14px' }; }
 
 // ----- Presets -----
@@ -32,10 +40,13 @@ const presets=[
 const overlay=create('div',{}, {position:'fixed',inset:0,background:'linear-gradient(135deg, rgba(0,0,0,0.95), rgba(0,0,30,0.95))',display:'flex',alignItems:'center',justifyContent:'center',zIndex:2147483647});
 document.body.appendChild(overlay);
 
-const loginBox=create('div',{}, {width:'460px',padding:'28px',background:'#070710',borderRadius:'14px',boxShadow:'0 0 24px #0ea5ff,0 0 48px #0ea5ff',display:'flex',flexDirection:'column',alignItems:'center',gap:'12px',fontFamily:'Segoe UI, sans-serif',color:'#fff',position:'relative'});
+const loginBox=create('div',{}, {width:'460px',padding:'28px',background:'#070710',borderRadius:'14px',boxShadow:'0 0 24px #0ea5ff,0 0 48px #0ea5ff',display:'flex',flexDirection:'column',alignItems:'center',gap:'12px',fontFamily:'Segoe UI, sans-serif',color:'#fff',position:'relative',opacity:0,transform:'scale(0.8)',transition:'all 0.4s ease'});
 append(overlay,loginBox);
+setTimeout(()=>{ loginBox.style.opacity=1; loginBox.style.transform='scale(1)'; },50);
 
-const loginHeader=create('div',{innerText:'🔒 JS Executor v4 — Login'},{fontSize:'20px',fontWeight:800,color:'#0ea5ff',textShadow:'0 0 10px #0ea5ff'});
+const loginHeader=create('div',{innerText:'🔒 JS Executor v4 — Login'},{fontSize:'20px',fontWeight:800,color:'#0ea5ff',textShadow:'0 0 10px #0ea5ff',transition:'text-shadow 0.5s ease'});
+loginHeader.onmouseenter=()=>loginHeader.style.textShadow='0 0 20px #0ea5ff,0 0 40px #0ea5ff';
+loginHeader.onmouseleave=()=>loginHeader.style.textShadow='0 0 10px #0ea5ff';
 loginBox.appendChild(loginHeader);
 
 const userInput=create('input',{id:'__dbg_user',placeholder:'Username'},inputStyle());
@@ -49,24 +60,35 @@ loginBox.appendChild(toggleEye);
 const loginErr=create('div',{}, {height:'18px',color:'#ff6b6b',fontSize:'13px'});
 loginBox.appendChild(loginErr);
 
-const loginBtn=btn('Login','#0ea5ff'); loginBtn.style.marginTop='6px'; loginBox.appendChild(loginBtn);
+const loginBtn=animatedBtn('Login','#0ea5ff'); loginBtn.style.marginTop='6px'; loginBox.appendChild(loginBtn);
 
 // ----- Console -----
 let consoleBox=null;
-function log(msg){ if(!consoleBox) return; const line=create('div',{}, {whiteSpace:'pre-wrap',lineHeight:'1.35',fontFamily:'Consolas, monospace',padding:'2px 0'}); line.innerText=msg; consoleBox.appendChild(line); while(consoleBox.childNodes.length>200) consoleBox.removeChild(consoleBox.firstChild); consoleBox.scrollTop=consoleBox.scrollHeight; }
+function log(msg){
+  if(!consoleBox) return;
+  const line=create('div',{}, {whiteSpace:'pre-wrap',lineHeight:'1.35',fontFamily:'Consolas, monospace',padding:'2px 0',opacity:0,transform:'translateY(10px)',transition:'all 0.4s ease'});
+  line.innerText=msg;
+  consoleBox.appendChild(line);
+  setTimeout(()=>{ line.style.opacity=1; line.style.transform='translateY(0)'; },50);
+  while(consoleBox.childNodes.length>200) consoleBox.removeChild(consoleBox.firstChild);
+  consoleBox.scrollTop=consoleBox.scrollHeight;
+}
 
 // ----- Editor GUI -----
 function openEditor(){
-  const panel=create('div',{id:'__dbg'},{position:'fixed',left:'80px',top:'80px',width:'980px',height:'640px',background:'#05060a',color:'#fff',borderRadius:'12px',boxShadow:'0 0 20px #0ea5ff,0 0 40px #0ea5ff',display:'flex',flexDirection:'column',fontFamily:'Consolas,monospace',zIndex:2147483647,overflow:'hidden'});
+  const panel=create('div',{id:'__dbg'},{position:'fixed',left:'80px',top:'80px',width:'980px',height:'640px',background:'#05060a',color:'#fff',borderRadius:'12px',boxShadow:'0 0 20px #0ea5ff,0 0 40px #0ea5ff',display:'flex',flexDirection:'column',fontFamily:'Consolas,monospace',zIndex:2147483647,overflow:'hidden',opacity:0,transform:'scale(0.8)',transition:'all 0.35s ease'});
   document.body.appendChild(panel);
+  setTimeout(()=>{ panel.style.opacity=1; panel.style.transform='scale(1)'; },50);
 
   // Header
-  const hdr=create('div',{}, {padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',background:'linear-gradient(90deg,#000,#071229)',cursor:'move',userSelect:'none',fontWeight:700});
+  const hdr=create('div',{}, {padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',background:'linear-gradient(90deg,#000,#071229)',cursor:'move',userSelect:'none',fontWeight:700,transition:'text-shadow 0.5s ease'});
   const title=create('div',{innerText:'⚡ JS Executor v4 Pro'},{color:'#9fe9ff'});
-  const closeBtn=btn('✖','#ff6b6b'); closeBtn.style.padding='6px 10px'; closeBtn.onclick=()=>panel.remove();
-  hdr.appendChild(title);
-  hdr.appendChild(closeBtn);
+  const closeBtn=animatedBtn('✖','#ff6b6b'); closeBtn.style.padding='6px 10px'; closeBtn.onclick=()=>panel.remove();
+  hdr.appendChild(title); hdr.appendChild(closeBtn);
   panel.appendChild(hdr);
+
+  hdr.onmouseenter=()=>hdr.style.textShadow='0 0 20px #0ea5ff,0 0 40px #0ea5ff';
+  hdr.onmouseleave=()=>hdr.style.textShadow='0 0 10px #0ea5ff';
 
   (function(el,handle){ let ox=0,oy=0,down=false; handle.addEventListener('mousedown',e=>{down=true;ox=e.clientX-el.offsetLeft;oy=e.clientY-el.offsetTop;document.body.style.userSelect='none';}); document.addEventListener('mousemove',e=>{if(!down)return;el.style.left=(e.clientX-ox)+'px'; el.style.top=(e.clientY-oy)+'px';}); document.addEventListener('mouseup',()=>{down=false;document.body.style.userSelect='';}); })(panel,hdr);
 
@@ -82,10 +104,10 @@ function openEditor(){
   panel.appendChild(contentArea);
 
   // Presets toggle button
-  const presetToggle=btn('🎯 Presets','#0ea5ff'); tabBar.appendChild(presetToggle);
+  const presetToggle=animatedBtn('🎯 Presets','#0ea5ff'); tabBar.appendChild(presetToggle);
 
   for(const tName in tabs){
-    const btnEl=btn(tName,'#0ea5ff'); btnEl.style.flex='1';
+    const btnEl=animatedBtn(tName,'#0ea5ff'); btnEl.style.flex='1';
     tabBar.appendChild(btnEl);
     tabButtons[tName]=btnEl;
   }
@@ -98,26 +120,23 @@ function openEditor(){
 
     if(type==='js' || type==='css' || type==='dom'){
       const cb=create('div',{}, {display:'flex',gap:'8px',alignItems:'center'});
-      const runBtn=btn('▶ Run','#00c8ff');
-      const clearBtn=btn('🧹 Clear','#2b2b2b');
-      const saveBtn=btn('💾 Save','#36c36c');
+      const runBtn=animatedBtn('▶ Run','#00c8ff');
+      const clearBtn=animatedBtn('🧹 Clear','#2b2b2b');
+      const saveBtn=animatedBtn('💾 Save','#36c36c');
       cb.appendChild(runBtn); cb.appendChild(clearBtn); cb.appendChild(saveBtn);
 
-      // Apply button for CSS/DOM
       let applyBtn=null;
       if(type==='css' || type==='dom'){
-        applyBtn=btn('⚡ Apply','#ffa500');
+        applyBtn=animatedBtn('⚡ Apply','#ffa500');
         cb.appendChild(applyBtn);
       }
       box.appendChild(cb);
 
-      // JS Run/Clear/Save
       if(type==='js'){
         runBtn.onclick=()=>{consoleBox.innerHTML=''; try{ new Function(ta.value)(); log('[OK] executed'); }catch(e){ log('[ERR] '+(e.message||e)); }};
         clearBtn.onclick=()=>{ta.value=''; consoleBox.innerHTML=''; log('[Cleared editor & console]');};
         saveBtn.onclick=()=>{ const blob=new Blob([ta.value],{type:'text/javascript'}); const a=create('a',{},{}); a.href=URL.createObjectURL(blob); a.download='script.js'; a.click(); log('[Saved script.js]'); };
       }
-      // CSS
       else if(type==='css'){
         ta.value=Array.from(document.styleSheets||[]).map(s=>{try{return Array.from(s.cssRules||[]).map(r=>r.cssText).join('\n')}catch(e){return ''}}).join('\n');
         runBtn.onclick=()=>{ let s=document.getElementById('__dbg_custom_css'); if(!s){ s=create('style',{},{}); s.id='__dbg_custom_css'; document.head.appendChild(s); } s.textContent=ta.value; log('[CSS applied]'); };
@@ -125,7 +144,6 @@ function openEditor(){
         saveBtn.onclick=()=>{ let blob=new Blob([ta.value],{type:'text/css'}); let a=create('a',{},{}); a.href=URL.createObjectURL(blob); a.download='style.css'; a.click(); log('[Saved style.css]'); };
         applyBtn.onclick=()=>{ let s=document.getElementById('__dbg_custom_css'); if(!s){ s=create('style',{},{}); s.id='__dbg_custom_css'; document.head.appendChild(s); } s.textContent=ta.value; log('[CSS applied via Apply]'); };
       }
-      // DOM
       else if(type==='dom'){
         ta.value=document.body.outerHTML;
         runBtn.onclick=()=>{ document.body.innerHTML=ta.value; log('[DOM applied]'); };
@@ -151,30 +169,42 @@ function openEditor(){
   showTab('js');
   for(const k in tabButtons){ tabButtons[k].onclick=()=>showTab(tabs[k]); }
 
-  // Presets panel
-  const presetsPanel=create('div',{}, {position:'absolute',right:'0',top:'50px',width:'240px',bottom:'0',background:'#0b1220',borderLeft:'1px solid #0ea5ff',display:'none',flexDirection:'column',padding:'6px',gap:'6px',overflowY:'auto'});
+  // ----- Presets Panel -----
+  const presetsPanel=create('div',{}, {position:'absolute',right:'0',top:'50px',width:'240px',bottom:'0',background:'#0b1220',borderLeft:'1px solid #0ea5ff',display:'none',flexDirection:'column',padding:'6px',gap:'6px',overflowY:'auto',transition:'all 0.4s ease',transform:'translateX(100%)',opacity:0});
   panel.appendChild(presetsPanel);
-  const presetSearch=create('input',{placeholder:'Search presets...'}, {...inputStyle('90%')});
-  presetsPanel.appendChild(presetSearch);
+
   const presetList=create('div',{}, {flex:1,display:'flex',flexDirection:'column',gap:'4px',overflowY:'auto'});
   presetsPanel.appendChild(presetList);
 
-  function renderPresets(){
-    presetList.innerHTML='';
-    const term=presetSearch.value.toLowerCase();
-    presets.filter(p=>p.name.toLowerCase().includes(term)).forEach(p=>{
-      const b=create('button',{innerText:p.name},{padding:'4px 6px',borderRadius:'4px',border:'none',background:'#0e1a33',color:'#fff',cursor:'pointer',textAlign:'left'});
-      b.onclick=()=>{ editorContents['js'].querySelector('textarea').value=p.code; log(`[Preset loaded] ${p.name}`); showTab('js'); };
-      presetList.appendChild(b);
-    });
+  function createPresetButton(p){
+    const b=create('button',{innerText:p.name},{padding:'4px 6px',borderRadius:'4px',border:'none',background:'#0e1a33',color:'#fff',cursor:'pointer',textAlign:'left',transition:'all 0.3s ease'});
+    b.onmouseenter=()=> b.style.boxShadow='0 0 12px #0ea5ff,0 0 20px #0ea5ff';
+    b.onmouseleave=()=> b.style.boxShadow='';
+    b.onclick=()=>{ editorContents['js'].querySelector('textarea').value=p.code; log(`[Preset loaded] ${p.name}`); showTab('js'); };
+    return b;
   }
-  presetSearch.oninput=renderPresets;
+
+  function renderPresets(){ presetList.innerHTML=''; presets.forEach(p=>presetList.appendChild(createPresetButton(p))); }
   renderPresets();
-  presetToggle.onclick=()=>presetsPanel.style.display=presetsPanel.style.display==='flex'?'none':'flex';
+
+  presetToggle.onclick=()=>{
+    if(presetsPanel.style.display==='flex'){
+      presetsPanel.style.transform='translateX(100%)';
+      presetsPanel.style.opacity=0;
+      setTimeout(()=>{ presetsPanel.style.display='none'; },400);
+    } else {
+      presetsPanel.style.display='flex';
+      setTimeout(()=>{ presetsPanel.style.transform='translateX(0)'; presetsPanel.style.opacity=1; },50);
+    }
+  };
 
   // Resize handle
-  const resizer=create('div',{}, {width:'16px',height:'16px',position:'absolute',right:'4px',bottom:'4px',cursor:'se-resize',background:'#0ea5ff',borderRadius:'4px'});
+  const resizer=create('div',{}, {width:'16px',height:'16px',position:'absolute',right:'4px',bottom:'4px',cursor:'se-resize',background:'#0ea5ff',borderRadius:'4px',animation:'pulse 1.5s infinite alternate'});
   panel.appendChild(resizer);
+  const styleSheet=document.createElement('style');
+  styleSheet.textContent=`@keyframes pulse {0%{transform:scale(1);}100%{transform:scale(1.2);}}`;
+  document.head.appendChild(styleSheet);
+
   resizer.addEventListener('mousedown',e=>{
     e.preventDefault();
     const startX=e.clientX,startY=e.clientY,startW=panel.offsetWidth,startH=panel.offsetHeight;
