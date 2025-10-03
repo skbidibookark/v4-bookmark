@@ -1,0 +1,194 @@
+(function(){
+if(document.getElementById('__dbg')) return;
+
+// ----- Helpers -----
+function create(tag, props={}, styles={}){ const el=document.createElement(tag); Object.assign(el,props); Object.assign(el.style,styles); return el; }
+function append(parent,...kids){ kids.forEach(k=>parent.appendChild(k)); return parent; }
+function btn(text,color='#0ea5ff'){ const b=create('button',{innerText:text},{padding:'6px 10px',borderRadius:'6px',background:color,border:'none',cursor:'pointer',color:'#fff',fontWeight:700,fontSize:'13px',boxShadow:`0 4px 12px ${color}33`,transition:'transform .12s'}); b.onmouseenter=()=>b.style.transform='translateY(-2px)'; b.onmouseleave=()=>b.style.transform=''; return b; }
+function inputStyle(width='86%'){ return { width:width, padding:'6px 6px', borderRadius:'6px', border:'1px solid #222', background:'#0b0d12', color:'#fff', outline:'none', fontSize:'14px' }; }
+
+// ----- Presets -----
+const presets=[
+  {name:'Invert Colors', code:"document.body.style.filter=document.body.style.filter==='invert(1)'?'none':'invert(1)';"},
+  {name:'Dark Mode', code:"document.body.style.background='#0b0d12';document.body.style.color='#e6f7ff';"},
+  {name:'Light Mode', code:"document.body.style.background='#ffffff';document.body.style.color='#111';"},
+  {name:'Rainbow BG', code:"(function(){let i=0;clearInterval(window.__dbg_rainbow);window.__dbg_rainbow=setInterval(()=>{document.body.style.background='hsl('+i+',80%,60%)';i=(i+4)%360;},80);})();"},
+  {name:'Confetti', code:"(function(){var c=document.createElement('canvas');c.style.position='fixed';c.style.left=0;c.style.top=0;c.style.pointerEvents='none';c.width=innerWidth;c.height=innerHeight;document.body.appendChild(c);var ctx=c.getContext('2d');var a=[];for(var i=0;i<200;i++)a.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*6+2,dx:(Math.random()-0.5)*2,dy:Math.random()*3+1,color:'hsl('+Math.floor(Math.random()*360)+',90%,60%)'});function d(){ctx.clearRect(0,0,c.width,c.height);a.forEach(function(p){ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,2*Math.PI);ctx.fill();p.x+=p.dx;p.y+=p.dy;if(p.y>c.height){p.y=0;p.x=Math.random()*c.width}});requestAnimationFrame(d);}d();})();"},
+  {name:'Flip Text', code:"document.querySelectorAll('*').forEach(el=>{try{if(el.childElementCount===0&&el.innerText)el.innerText=el.innerText.split('').reverse().join('')}catch(e){}});"},
+  {name:'Alert Spammer', code:"(function(){let n=0;const t=setInterval(()=>{alert('You got pranked!');n++;if(n>5)clearInterval(t)},700);})();"},
+  {name:'Highlight Links', code:"document.querySelectorAll('a').forEach(a=>{a.style.background='yellow';a.style.color='#000';});"},
+  {name:'Scroll To Top', code:"window.scrollTo({top:0,behavior:'smooth'});"},
+  {name:'Scroll To Bottom', code:"window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});"},
+  {name:'Show Page Info', code:"alert('URL: '+location.href+'\\nTitle: '+document.title);"},
+  {name:'Random Quote', code:"alert('Believe you can and you\\'re halfway there.');"},
+  {name:'Fake BSOD', code:"(function(){if(document.getElementById('__fake_bsod'))return;var p=document.createElement('div');p.id='__fake_bsod';p.style.cssText='position:fixed;left:0;top:0;width:100vw;height:100vh;background:#012169;color:#fff;z-index:2147483647;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:40px;font-family:Segoe UI,Roboto,monospace';var t=document.createElement('div');t.style.fontSize='34px';t.style.fontWeight=800;t.style.marginBottom='12px';t.textContent='A problem has been detected and Windows has been shut down to prevent damage to your computer.';p.appendChild(t);var s=document.createElement('div');s.style.fontSize='16px';s.style.marginBottom='14px';s.textContent='The system encountered an unexpected error. Please contact the system administrator.';p.appendChild(s);var code=document.createElement('div');code.style.fontFamily='monospace';code.style.fontSize='14px';code.style.background='rgba(0,0,0,.12)';code.style.padding='12px';code.style.borderRadius='6px';code.textContent='*** STOP: 0x0000007B (0xFFFFF880009A9928, 0xFFFFFFFFC0000034)';p.appendChild(code);var btn=document.createElement('button');btn.textContent='Close Fake BSOD';btn.style.marginTop='18px';btn.onclick=function(){p.remove();};p.appendChild(btn);document.body.appendChild(p);})();"},
+  {name:'Replace Images', code:"document.querySelectorAll('img').forEach(i=>{try{i.src='https://i.imgur.com/3P6GfKQ.png'}catch(e){}});"},
+  {name:'Gradient Background', code:"document.body.style.background='linear-gradient(90deg,#ff4f4f,#00a8ff)';"},
+  {name:'Dark Mode Toggle', code:"document.body.style.filter=document.body.style.filter==='invert(1)'?'invert(0)':'invert(1)';"},
+  {name:'GDI Madness Loader', code:"(async function(){const url='https://raw.githubusercontent.com/skbidibookark/JS-scirpts/main/GDI%20Madness';try{const r=await fetch(url);if(!r.ok)throw new Error('HTTP '+r.status);const txt=await r.text();new Function(txt)();}catch(e){console.error(e);alert('Error: '+e.message);} })();"}
+];
+
+// ----- Login Overlay -----
+const overlay=create('div',{}, {position:'fixed',inset:0,background:'linear-gradient(135deg, rgba(0,0,0,0.95), rgba(0,0,30,0.95))',display:'flex',alignItems:'center',justifyContent:'center',zIndex:2147483647});
+document.body.appendChild(overlay);
+
+const loginBox=create('div',{}, {width:'460px',padding:'28px',background:'#070710',borderRadius:'14px',boxShadow:'0 0 24px #0ea5ff,0 0 48px #0ea5ff',display:'flex',flexDirection:'column',alignItems:'center',gap:'12px',fontFamily:'Segoe UI, sans-serif',color:'#fff',position:'relative'});
+append(overlay,loginBox);
+
+const loginHeader=create('div',{innerText:'🔒 JS Executor v4 — Login'},{fontSize:'20px',fontWeight:800,color:'#0ea5ff',textShadow:'0 0 10px #0ea5ff'});
+loginBox.appendChild(loginHeader);
+
+const userInput=create('input',{id:'__dbg_user',placeholder:'Username'},inputStyle());
+const passInput=create('input',{id:'__dbg_pass',type:'password',placeholder:'Password'},inputStyle());
+append(loginBox,userInput,passInput);
+
+const toggleEye=create('div',{innerText:'👁️'},{position:'absolute',top:'94px',right:'56px',cursor:'pointer',color:'#0ea5ff',fontSize:'16px'});
+toggleEye.onclick=()=>passInput.type=passInput.type==='password'?'text':'password';
+loginBox.appendChild(toggleEye);
+
+const loginErr=create('div',{}, {height:'18px',color:'#ff6b6b',fontSize:'13px'});
+loginBox.appendChild(loginErr);
+
+const loginBtn=btn('Login','#0ea5ff'); loginBtn.style.marginTop='6px'; loginBox.appendChild(loginBtn);
+
+// ----- Console -----
+let consoleBox=null;
+function log(msg){ if(!consoleBox) return; const line=create('div',{}, {whiteSpace:'pre-wrap',lineHeight:'1.35',fontFamily:'Consolas, monospace',padding:'2px 0'}); line.innerText=msg; consoleBox.appendChild(line); while(consoleBox.childNodes.length>200) consoleBox.removeChild(consoleBox.firstChild); consoleBox.scrollTop=consoleBox.scrollHeight; }
+
+// ----- Editor GUI -----
+function openEditor(){
+  const panel=create('div',{id:'__dbg'},{position:'fixed',left:'80px',top:'80px',width:'980px',height:'640px',background:'#05060a',color:'#fff',borderRadius:'12px',boxShadow:'0 0 20px #0ea5ff,0 0 40px #0ea5ff',display:'flex',flexDirection:'column',fontFamily:'Consolas,monospace',zIndex:2147483647,overflow:'hidden'});
+  document.body.appendChild(panel);
+
+  // Header
+  const hdr=create('div',{}, {padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',background:'linear-gradient(90deg,#000,#071229)',cursor:'move',userSelect:'none',fontWeight:700});
+  const title=create('div',{innerText:'⚡ JS Executor v4 Pro'},{color:'#9fe9ff'});
+  const closeBtn=btn('✖','#ff6b6b'); closeBtn.style.padding='6px 10px'; closeBtn.onclick=()=>panel.remove();
+  hdr.appendChild(title);
+  hdr.appendChild(closeBtn);
+  panel.appendChild(hdr);
+
+  (function(el,handle){ let ox=0,oy=0,down=false; handle.addEventListener('mousedown',e=>{down=true;ox=e.clientX-el.offsetLeft;oy=e.clientY-el.offsetTop;document.body.style.userSelect='none';}); document.addEventListener('mousemove',e=>{if(!down)return;el.style.left=(e.clientX-ox)+'px'; el.style.top=(e.clientY-oy)+'px';}); document.addEventListener('mouseup',()=>{down=false;document.body.style.userSelect='';}); })(panel,hdr);
+
+  // Tab bar
+  const tabBar=create('div',{}, {display:'flex',gap:'4px',padding:'6px 10px',background:'#071026',borderBottom:'1px solid #0ea5ff'});
+  panel.appendChild(tabBar);
+
+  // Tabs
+  const tabs={JS:'js',CSS:'css',DOM:'dom'};
+  const tabButtons={};
+  const editorContents={};
+  const contentArea=create('div',{}, {flex:1,display:'flex',flexDirection:'column',gap:'6px',padding:'6px',overflow:'hidden'});
+  panel.appendChild(contentArea);
+
+  // Presets toggle button
+  const presetToggle=btn('🎯 Presets','#0ea5ff'); tabBar.appendChild(presetToggle);
+
+  for(const tName in tabs){
+    const btnEl=btn(tName,'#0ea5ff'); btnEl.style.flex='1';
+    tabBar.appendChild(btnEl);
+    tabButtons[tName]=btnEl;
+  }
+
+  // Editor containers
+  function createEditor(type){
+    const box=create('div',{}, {flex:1,display:'flex',flexDirection:'column',gap:'6px',overflow:'hidden'});
+    const ta=create('textarea',{value:type==='js'?'// Write JS here\n':''},{flex:2,background:'#071026',color:'#fff',border:'none',outline:'none',padding:'10px',fontFamily:'Consolas,monospace',fontSize:'14px',resize:'none'});
+    box.appendChild(ta);
+
+    if(type==='js' || type==='css' || type==='dom'){
+      const cb=create('div',{}, {display:'flex',gap:'8px',alignItems:'center'});
+      const runBtn=btn('▶ Run','#00c8ff');
+      const clearBtn=btn('🧹 Clear','#2b2b2b');
+      const saveBtn=btn('💾 Save','#36c36c');
+      cb.appendChild(runBtn); cb.appendChild(clearBtn); cb.appendChild(saveBtn);
+
+      // Apply button for CSS/DOM
+      let applyBtn=null;
+      if(type==='css' || type==='dom'){
+        applyBtn=btn('⚡ Apply','#ffa500');
+        cb.appendChild(applyBtn);
+      }
+      box.appendChild(cb);
+
+      // JS Run/Clear/Save
+      if(type==='js'){
+        runBtn.onclick=()=>{consoleBox.innerHTML=''; try{ new Function(ta.value)(); log('[OK] executed'); }catch(e){ log('[ERR] '+(e.message||e)); }};
+        clearBtn.onclick=()=>{ta.value=''; consoleBox.innerHTML=''; log('[Cleared editor & console]');};
+        saveBtn.onclick=()=>{ const blob=new Blob([ta.value],{type:'text/javascript'}); const a=create('a',{},{}); a.href=URL.createObjectURL(blob); a.download='script.js'; a.click(); log('[Saved script.js]'); };
+      }
+      // CSS
+      else if(type==='css'){
+        ta.value=Array.from(document.styleSheets||[]).map(s=>{try{return Array.from(s.cssRules||[]).map(r=>r.cssText).join('\n')}catch(e){return ''}}).join('\n');
+        runBtn.onclick=()=>{ let s=document.getElementById('__dbg_custom_css'); if(!s){ s=create('style',{},{}); s.id='__dbg_custom_css'; document.head.appendChild(s); } s.textContent=ta.value; log('[CSS applied]'); };
+        clearBtn.onclick=()=>{ta.value=''; log('[CSS cleared in editor]');};
+        saveBtn.onclick=()=>{ let blob=new Blob([ta.value],{type:'text/css'}); let a=create('a',{},{}); a.href=URL.createObjectURL(blob); a.download='style.css'; a.click(); log('[Saved style.css]'); };
+        applyBtn.onclick=()=>{ let s=document.getElementById('__dbg_custom_css'); if(!s){ s=create('style',{},{}); s.id='__dbg_custom_css'; document.head.appendChild(s); } s.textContent=ta.value; log('[CSS applied via Apply]'); };
+      }
+      // DOM
+      else if(type==='dom'){
+        ta.value=document.body.outerHTML;
+        runBtn.onclick=()=>{ document.body.innerHTML=ta.value; log('[DOM applied]'); };
+        clearBtn.onclick=()=>{ta.value=''; log('[DOM cleared]');};
+        saveBtn.onclick=()=>{ let blob=new Blob([ta.value],{type:'text/html'}); let a=create('a',{},{}); a.href=URL.createObjectURL(blob); a.download='dom.html'; a.click(); log('[Saved dom.html]'); };
+        applyBtn.onclick=()=>{ document.body.innerHTML=ta.value; log('[DOM applied via Apply]'); };
+      }
+    }
+    contentArea.appendChild(box);
+    return box;
+  }
+
+  editorContents['js']=createEditor('js');
+  editorContents['css']=createEditor('css');
+  editorContents['dom']=createEditor('dom');
+
+  // Console
+  consoleBox=create('div',{}, {height:'140px',background:'#00060a',borderRadius:'6px',padding:'8px',overflowY:'auto',color:'#9ef2b6',fontSize:'13px',lineHeight:'1.35',fontFamily:'Consolas,monospace'});
+  contentArea.appendChild(consoleBox);
+
+  // Tab switching
+  function showTab(name){ for(const k in editorContents){ editorContents[k].style.display=k===name?'flex':'none'; } }
+  showTab('js');
+  for(const k in tabButtons){ tabButtons[k].onclick=()=>showTab(tabs[k]); }
+
+  // Presets panel
+  const presetsPanel=create('div',{}, {position:'absolute',right:'0',top:'50px',width:'240px',bottom:'0',background:'#0b1220',borderLeft:'1px solid #0ea5ff',display:'none',flexDirection:'column',padding:'6px',gap:'6px',overflowY:'auto'});
+  panel.appendChild(presetsPanel);
+  const presetSearch=create('input',{placeholder:'Search presets...'}, {...inputStyle('90%')});
+  presetsPanel.appendChild(presetSearch);
+  const presetList=create('div',{}, {flex:1,display:'flex',flexDirection:'column',gap:'4px',overflowY:'auto'});
+  presetsPanel.appendChild(presetList);
+
+  function renderPresets(){
+    presetList.innerHTML='';
+    const term=presetSearch.value.toLowerCase();
+    presets.filter(p=>p.name.toLowerCase().includes(term)).forEach(p=>{
+      const b=create('button',{innerText:p.name},{padding:'4px 6px',borderRadius:'4px',border:'none',background:'#0e1a33',color:'#fff',cursor:'pointer',textAlign:'left'});
+      b.onclick=()=>{ editorContents['js'].querySelector('textarea').value=p.code; log(`[Preset loaded] ${p.name}`); showTab('js'); };
+      presetList.appendChild(b);
+    });
+  }
+  presetSearch.oninput=renderPresets;
+  renderPresets();
+  presetToggle.onclick=()=>presetsPanel.style.display=presetsPanel.style.display==='flex'?'none':'flex';
+
+  // Resize handle
+  const resizer=create('div',{}, {width:'16px',height:'16px',position:'absolute',right:'4px',bottom:'4px',cursor:'se-resize',background:'#0ea5ff',borderRadius:'4px'});
+  panel.appendChild(resizer);
+  resizer.addEventListener('mousedown',e=>{
+    e.preventDefault();
+    const startX=e.clientX,startY=e.clientY,startW=panel.offsetWidth,startH=panel.offsetHeight;
+    function mm(ev){ panel.style.width=(startW+ev.clientX-startX)+'px'; panel.style.height=(startH+ev.clientY-startY)+'px'; }
+    function mu(){ document.removeEventListener('mousemove',mm); document.removeEventListener('mouseup',mu); }
+    document.addEventListener('mousemove',mm);
+    document.addEventListener('mouseup',mu);
+  });
+}
+
+// ----- Login button -----
+loginBtn.onclick=()=>{
+  const u=userInput.value.trim(), p=passInput.value.trim();
+  if(u==='JSexecutor' && p==='JSplayground'){ overlay.remove(); openEditor(); }
+  else loginErr.innerText='Incorrect username or password';
+};
+})();
